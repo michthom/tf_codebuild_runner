@@ -82,8 +82,6 @@ jobs:
 
           # Path to .tfbackend files is relative to AFTER the chdir in the terraform command
 
-
-
           terraform \
             -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
             init \
