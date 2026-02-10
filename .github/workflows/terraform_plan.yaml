@@ -43,6 +43,8 @@ jobs:
           "20_networking",
           "30_virtual_desktop",
         ]
+        # Ensure the Terraform Plan jobs run sequentially based on the configuration layer
+        max-parallel: 1
 
     steps:
       - run: echo "Environment         ${{ env.ENVIRONMENT }}"
