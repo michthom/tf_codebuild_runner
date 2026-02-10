@@ -77,10 +77,16 @@ jobs:
             exit 1
           fi
 
-          # Relative path to .tfbackend files AFTER the chdir in the terraform commands
+          # terraform -chdir must be BEFORE the operation name. Ugly but required.
+          # https://developer.hashicorp.com/terraform/cli/commands#switching-working-directory-with-chdir
 
-          terraform init \
+          # Path to .tfbackend files is relative to AFTER the chdir in the terraform command
+
+
+
+          terraform \
             -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+            init \
             -backend-config="../../../$BACKEND_FILE"
 
       - name: Prepare tfvars files
@@ -102,8 +108,9 @@ jobs:
 
       - name: Terraform Plan
         run: |
-          terraform plan \
+          terraform \
             -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+            plan \
             -var-file="../../../$TFVARS_GLOBAL_FILE" \
             -var-file="../../../$TFVARS_ENVIRONMENT_FILE" \
             -var-file="../../../$TFVARS_CONFIG_LAYER_FILE" \
