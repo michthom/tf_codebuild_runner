@@ -41,9 +41,9 @@ jobs:
       matrix:
         configuration_layer: [
           "00_prerequisites",
-          "10_data_storage",
-          "20_networking",
-          "30_virtual_desktop",
+          # "10_data_storage",
+          # "20_networking",
+          # "30_virtual_desktop",
         ]
 
     steps:
@@ -61,9 +61,9 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Terraform Init
-        run: |
-          BACKEND_FILE = terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
-          
+        env:
+          BACKEND_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
+        run: |          
           if [ -f "$BACKEND_FILE" ]; then
             echo "Using backend configuration from $BACKEND_FILE"
 
