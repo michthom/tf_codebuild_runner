@@ -25,9 +25,9 @@ env:
   AWS_ACCOUNT_ID: 667532145122
   ENVIRONMENT: |-
     ${{ case(
-        github.ref_name == "dev", "dev",
-        github.ref_name == "main", "staging",
-        "dev"
+        github.ref_name == 'dev', 'dev',
+        github.ref_name == 'main', 'staging',
+        'dev'
     ) }}
 
 
