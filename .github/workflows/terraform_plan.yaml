@@ -36,6 +36,8 @@ jobs:
     runs-on:
       - codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
     strategy:
+      # Ensure the Terraform Plan jobs run sequentially based on the configuration layer
+      max-parallel: 1
       matrix:
         configuration_layer: [
           "00_prerequisites",
@@ -43,8 +45,6 @@ jobs:
           "20_networking",
           "30_virtual_desktop",
         ]
-        # Ensure the Terraform Plan jobs run sequentially based on the configuration layer
-        max-parallel: 1
 
     steps:
       - run: echo "Environment         ${{ env.ENVIRONMENT }}"
