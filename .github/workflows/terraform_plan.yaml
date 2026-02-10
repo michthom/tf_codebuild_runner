@@ -72,15 +72,39 @@ jobs:
         env:
           BACKEND_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
         run: |          
-          echo "Looking for backend file : $BACKEND_FILE"
-          echo "Current directory: $(pwd)"
-
-          if [ -f "$BACKEND_FILE" ]; then
-            echo "Using backend configuration from $BACKEND_FILE"
-
-            # Relative path to .tfbackend files AFTER the chdir in the terraform commands
-            terraform -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} init -backend-config="../../../$BACKEND_FILE"
-          else
+          if [ ! -f "$BACKEND_FILE" ]; then
             echo "No backend configuration file found for environment ${{ env.ENVIRONMENT }}. Aborting."
             exit 1
           fi
+
+          # Relative path to .tfbackend files AFTER the chdir in the terraform commands
+
+          terraform init \
+            -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+            -backend-config="../../../$BACKEND_FILE"
+
+      - name: Prepare tfvars files
+        env:
+          TFVARS_GLOBAL_FILE: terraform/global.tfvars
+          TFVARS_ENVIRONMENT_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfvars
+          TFVARS_CONFIG_LAYER_FILE: terraform/configuration_layers/${{ matrix.configuration_layer }}/config/${{ env.ENVIRONMENT }}.tfvars
+        run: |
+          for f in "$TFVARS_GLOBAL_FILE" "$TFVARS_ENVIRONMENT_FILE" "$TFVARS_CONFIG_LAYER_FILE"; do
+            if [ ! -f "$f" ]; then
+              echo "No tfvars file found at $f. Aborting."
+              exit 1
+            fi
+          done
+
+          echo "TFVARS_GLOBAL_FILE=$TFVARS_GLOBAL_FILE" >> $GITHUB_ENV
+          echo "TFVARS_ENVIRONMENT_FILE=$TFVARS_ENVIRONMENT_FILE" >> $GITHUB_ENV
+          echo "TFVARS_CONFIG_LAYER_FILE=$TFVARS_CONFIG_LAYER_FILE" >> $GITHUB_ENV
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+            -var-file="../../../$TFVARS_GLOBAL_FILE" \
+            -var-file="../../../$TFVARS_ENVIRONMENT_FILE" \
+            -var-file="../../../$TFVARS_CONFIG_LAYER_FILE" \
+            -out=${{ env.ENVIRONMENT }}-${{ matrix.configuration_layer }}.tfplan
