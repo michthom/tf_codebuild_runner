@@ -1,6 +1,11 @@
 # 10_data_storage layer - Data storage resources
 # Depends on: 00_prerequisites (discovered via tags)
 # Resources: RDS, DynamoDB, S3, ElastiCache, etc.
+
+
+# FIXME - this causes a failure if not present - which is
+# too brutal if simply planning the deployment before anything is applied
+
 # Ensure 00_prerequisites was applied
 data "aws_ssm_parameter" "prereq_00_prerequisites" {
   name = "/${var.environment}/module/00_prerequisites/applied"

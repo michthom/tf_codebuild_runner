@@ -14,6 +14,10 @@ resource "aws_ssm_parameter" "dummy_entry" {
     }
   )
 }
+
+# FIXME - these cause a failure if not present - which is
+# too brutal if simply planning the deployment before anything is applied
+
 # Ensure 10_data_storage and 20_networking were applied
 data "aws_ssm_parameter" "prereq_10_data_storage" {
   name = "/${var.environment}/module/10_data_storage/applied"

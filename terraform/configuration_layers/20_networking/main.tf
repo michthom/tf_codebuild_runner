@@ -2,6 +2,9 @@
 # Depends on: 00_prerequisites, 10_data_storage (discovered via tags)
 # Resources: VPC, Subnets, Security Groups, NACLs, Route tables, etc.
 
+# FIXME - this causes a failure if not present - which is
+# too brutal if simply planning the deployment before anything is applied
+
 // Ensure 00_prerequisites was applied
 data "aws_ssm_parameter" "prereq_00_prerequisites" {
   name = "/${var.environment}/module/00_prerequisites/applied"
