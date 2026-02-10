@@ -1,0 +1,46 @@
+name: Hello World
+on:
+  # Manual trigger of the workflow from the GitHub UI
+  workflow_dispatch
+
+  # Any changes to pull requests targeting the specified branches will trigger the workflow
+  pull_request:
+    branches:
+      - dev
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read
+
+# Constants used across all jobs
+env:
+  AWS_REGION: eu-west-2
+  AWS_ACCOUNT_ID: 667532145122
+  ENVIRONMENT: ${{ case (
+    github.ref_name == "dev", "dev",
+    github.ref_name == "main", "staging",
+  )}}
+
+
+jobs:
+  Terraform-Plan:
+    runs-on:
+      - codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    strategy:
+      matrix:
+        configuration_layer: [
+          "00_prerequisites",
+          "10_data_storage",
+          "20_networking",
+          "30_virtual_desktop",
+        ]
+
+    steps:
+      - run: echo "Hello World - Environment: ${{ env.ENVIRONMENT }}; Configuration Layer: ${{ matrix.configuration_layer }}"
