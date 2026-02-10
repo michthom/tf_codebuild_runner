@@ -26,7 +26,7 @@ env:
   ENVIRONMENT: |-
     ${{ case(
         github.ref_name == 'dev', 'dev',
-        github.ref_name == 'main', 'staging',
+        github.ref_name == 'main', 'stg',
         'dev'
     ) }}
 
@@ -67,7 +67,7 @@ jobs:
         run: |          
           echo "Looking for backend file : $BACKEND_FILE"
           echo "Current directory: $(pwd)"
-          
+
           if [ -f "$BACKEND_FILE" ]; then
             echo "Using backend configuration from $BACKEND_FILE"
 
