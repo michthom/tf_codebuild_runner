@@ -49,3 +49,27 @@ jobs:
     steps:
       - run: echo "Environment         ${{ env.ENVIRONMENT }}"
       - run: echo "Configuration Layer ${{ matrix.configuration_layer }}"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Terraform Init
+        run: |
+          BACKEND_FILE = terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
+          
+          if [ -f "$BACKEND_FILE" ]; then
+            echo "Using backend configuration from $BACKEND_FILE"
+
+            # Relative path to .tfbackend files AFTER the chdir in the terraform commands
+            terraform -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} init -backend-config="../../$BACKEND_FILE"
+          else
+            echo "No backend configuration file found for environment ${{ env.ENVIRONMENT }}. Aborting."
+            exit 1
+          fi
