@@ -41,9 +41,9 @@ jobs:
       matrix:
         configuration_layer: [
           "00_prerequisites",
-          # "10_data_storage",
-          # "20_networking",
-          # "30_virtual_desktop",
+          "10_data_storage",
+          "20_networking",
+          "30_virtual_desktop",
         ]
 
     steps:
