@@ -24,9 +24,9 @@ env:
   AWS_REGION: eu-west-2
   AWS_ACCOUNT_ID: 667532145122
   ENVIRONMENT: |-
-    ${{ case (
-        github.ref_name == "dev", "dev",
-        github.ref_name == "main", "staging",
+    ${{ case(
+        github.ref_name == 'dev', 'dev',
+        github.ref_name == 'main', 'staging',
     ) }}
 
 
