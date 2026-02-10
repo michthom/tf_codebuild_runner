@@ -60,6 +60,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      # See: https://github.com/hashicorp/setup-terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          # FIXME - should get this from global vars...
+          terraform_version: "~ 1.14.0"
       
       - name: Terraform Init
         env:
