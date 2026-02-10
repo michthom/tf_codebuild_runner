@@ -1,5 +1,7 @@
 name: Hello World
-on: [push]
+# Make this workflow triggerable manually from the GitHub UI
+on: [workflow_dispatch]
+
 jobs:
   Hello-World-Job:
     runs-on:

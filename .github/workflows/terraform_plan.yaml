@@ -1,4 +1,4 @@
-name: Hello World
+name: Terraform Plan
 on:
   # Manual trigger of the workflow from the GitHub UI
   workflow_dispatch:
@@ -32,7 +32,7 @@ env:
 
 
 jobs:
-  Terraform-Plan:
+  Terraform-Plan-Job:
     runs-on:
       - codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
     strategy:
