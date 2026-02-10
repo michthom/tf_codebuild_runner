@@ -79,7 +79,7 @@ jobs:
             echo "Using backend configuration from $BACKEND_FILE"
 
             # Relative path to .tfbackend files AFTER the chdir in the terraform commands
-            terraform -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} init -backend-config="../../$BACKEND_FILE"
+            terraform -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} init -backend-config="../../../$BACKEND_FILE"
           else
             echo "No backend configuration file found for environment ${{ env.ENVIRONMENT }}. Aborting."
             exit 1
