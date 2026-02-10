@@ -1,0 +1,40 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# .tfvars files are NOT ignored, and will be committed to the repo.
+# Ensure no sensitive data is stored in these files.
+# When you need to store sensitive data, use a secrets manager and reference the secrets in your .tf files.
+# DELIBERATELY COMMENTED OUT : *.tfvars
+# DELIBERATELY COMMENTED OUT : *.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include override files you do wish to add to version control
+!example_override.tf
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+*tfplan*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store

@@ -1,0 +1,4 @@
+bucket         = "667532145122-tf-state-stg-08415b10"
+region         = "eu-west-1"
+use_lockfile   = true
+encrypt        = true
