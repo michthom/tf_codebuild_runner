@@ -53,8 +53,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # See: https://github.com/aws-actions/configure-aws-credentials
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -64,6 +65,9 @@ jobs:
         env:
           BACKEND_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
         run: |          
+          echo "Looking for backend file : $BACKEND_FILE"
+          echo "Current directory: $(pwd)"
+          
           if [ -f "$BACKEND_FILE" ]; then
             echo "Using backend configuration from $BACKEND_FILE"
 
