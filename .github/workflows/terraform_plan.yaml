@@ -72,10 +72,15 @@ jobs:
       - name: Get Configuration Layers
         id: get_config_layers
         run: |
+          # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
-          CONFIG_LAYERS_JSON=$(jq -n --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
+
+          # Split the layers supplied per-line into objects and create a JSON object to contain them.
+          CONFIG_LAYERS_JSON=$(jq -n -c --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
+
+          # Escape the JSON string to ensure it can be safely passed as an output variable
           ESCAPED_CONFIG_LAYERS_JSON=$(echo "$CONFIG_LAYERS_JSON" | jq -R -s @json)
-          echo "toJSON:"
+
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
           echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
@@ -83,13 +88,11 @@ jobs:
         run: |
           echo "Received:"
           echo "${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}"
+
           parsed_structure=${{ fromJSON( steps.get_config_layers.outputs.CONFIG_LAYERS_JSON ) }}
                     
           echo "Parsed structure:"
           echo "$parsed_structure"
-
-          echo "Configuration layers:"
-          echo "$parsed_structure" | jq -r '.configuration_layers[]'
 
           # for config_layer in $configuration_layers; do
           #   echo "  - $config_layer"
