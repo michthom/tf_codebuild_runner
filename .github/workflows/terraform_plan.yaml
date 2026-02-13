@@ -111,7 +111,7 @@ jobs:
           #   "[{\"configuration_layers\":[\"00_prerequisites\",\"10_data_storage\",\"20_networking\",\"30_virtual_desktop\"]}]"
 
           # Set the escaped JSON as an output variable for use in subsequent steps
-          echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+          echo -n "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
       - name: Get Configuration Layers from JSON
         run: |
