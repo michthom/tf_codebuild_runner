@@ -68,13 +68,17 @@ jobs:
           # FIXME - should get this from global vars...
           terraform_version: "~ 1.14.0"
 
-      # Get the list of configuration layers from the repository and set it as an output variable for use in the matrix strategy
+      # Get the list of configuration layers from the repository and set it as an output variable
       - name: Get Configuration Layers
         id: get_config_layers
         run: |
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
-          LIST_LAYERS=$(echo $CONFIG_LAYERS | tr '\n' '')
-          echo "CONFIG_LAYERS=$LIST_LAYERS" >> $GITHUB_OUTPUT
+          echo "CONFIG_LAYERS: "
+          echo "$CONFIG_LAYERS"
+          echo "toJSON:"
+          echo toJSON("$CONFIG_LAYERS")
+          # LIST_LAYERS=$(echo $CONFIG_LAYERS | tr '\n' '')
+          # echo "CONFIG_LAYERS=$LIST_LAYERS" >> $GITHUB_OUTPUT
 
 
 
