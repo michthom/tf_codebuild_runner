@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
 
   # Any changes to pull requests targeting the specified branches will trigger the workflow
-  pull_request:
-    branches:
-      - dev
-      - main
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - edited
+  # pull_request:
+  #   branches:
+  #     - dev
+  #     - main
+  #   types:
+  #     - opened
+  #     - synchronize
+  #     - reopened
+  #     - edited
 
 permissions:
   contents: read
@@ -35,20 +35,20 @@ jobs:
   Terraform-Plan-Job:
     runs-on:
       - codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
-    strategy:
-      # Ensure the Terraform Plan jobs run sequentially based on the configuration layer
-      max-parallel: 1
-      matrix:
-        configuration_layer: [
-          "00_prerequisites",
-          "10_data_storage",
-          "20_networking",
-          "30_virtual_desktop",
-        ]
+    # strategy:
+    #   # Ensure the Terraform Plan jobs run sequentially based on the configuration layer
+    #   max-parallel: 1
+    #   matrix:
+    #     configuration_layer: [
+    #       "00_prerequisites",
+    #       "10_data_storage",
+    #       "20_networking",
+    #       "30_virtual_desktop",
+    #     ]
 
     steps:
       - run: echo "Environment         ${{ env.ENVIRONMENT }}"
-      - run: echo "Configuration Layer ${{ matrix.configuration_layer }}"
+      # - run: echo "Configuration Layer ${{ matrix.configuration_layer }}"
 
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -67,49 +67,58 @@ jobs:
         with:
           # FIXME - should get this from global vars...
           terraform_version: "~ 1.14.0"
-      
-      - name: Terraform Init
-        env:
-          BACKEND_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
-        run: |          
-          if [ ! -f "$BACKEND_FILE" ]; then
-            echo "No backend configuration file found for environment ${{ env.ENVIRONMENT }}. Aborting."
-            exit 1
-          fi
 
-          # terraform -chdir must be BEFORE the operation name. Ugly but required.
-          # https://developer.hashicorp.com/terraform/cli/commands#switching-working-directory-with-chdir
-
-          # Path to .tfbackend files is relative to AFTER the chdir in the terraform command
-
-          terraform \
-            -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
-            init \
-            -backend-config="../../../$BACKEND_FILE"
-
-      - name: Prepare tfvars files
-        env:
-          TFVARS_GLOBAL_FILE: terraform/global.tfvars
-          TFVARS_ENVIRONMENT_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfvars
-          TFVARS_CONFIG_LAYER_FILE: terraform/configuration_layers/${{ matrix.configuration_layer }}/config/${{ env.ENVIRONMENT }}.tfvars
+      # Get the list of configuration layers from the repository and set it as an output variable for use in the matrix strategy
+      - name: Get Configuration Layers
+        id: get_config_layers
         run: |
-          for f in "$TFVARS_GLOBAL_FILE" "$TFVARS_ENVIRONMENT_FILE" "$TFVARS_CONFIG_LAYER_FILE"; do
-            if [ ! -f "$f" ]; then
-              echo "No tfvars file found at $f. Aborting."
-              exit 1
-            fi
-          done
+          CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
+          echo "CONFIG_LAYERS=$CONFIG_LAYERS" >> $GITHUB_OUTPUT 
 
-          echo "TFVARS_GLOBAL_FILE=$TFVARS_GLOBAL_FILE" >> $GITHUB_ENV
-          echo "TFVARS_ENVIRONMENT_FILE=$TFVARS_ENVIRONMENT_FILE" >> $GITHUB_ENV
-          echo "TFVARS_CONFIG_LAYER_FILE=$TFVARS_CONFIG_LAYER_FILE" >> $GITHUB_ENV
+          
 
-      - name: Terraform Plan
-        run: |
-          terraform \
-            -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
-            plan \
-            -var-file="../../../$TFVARS_GLOBAL_FILE" \
-            -var-file="../../../$TFVARS_ENVIRONMENT_FILE" \
-            -var-file="../../../$TFVARS_CONFIG_LAYER_FILE" \
-            -out=${{ env.ENVIRONMENT }}-${{ matrix.configuration_layer }}.tfplan
+      # - name: Terraform Init
+      #   env:
+      #     BACKEND_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfbackend
+      #   run: |          
+      #     if [ ! -f "$BACKEND_FILE" ]; then
+      #       echo "No backend configuration file found for environment ${{ env.ENVIRONMENT }}. Aborting."
+      #       exit 1
+      #     fi
+
+      #     # terraform -chdir must be BEFORE the operation name. Ugly but required.
+      #     # https://developer.hashicorp.com/terraform/cli/commands#switching-working-directory-with-chdir
+
+      #     # Path to .tfbackend files is relative to AFTER the chdir in the terraform command
+
+      #     terraform \
+      #       -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+      #       init \
+      #       -backend-config="../../../$BACKEND_FILE"
+
+      # - name: Prepare tfvars files
+      #   env:
+      #     TFVARS_GLOBAL_FILE: terraform/global.tfvars
+      #     TFVARS_ENVIRONMENT_FILE: terraform/environments/${{ env.ENVIRONMENT }}.tfvars
+      #     TFVARS_CONFIG_LAYER_FILE: terraform/configuration_layers/${{ matrix.configuration_layer }}/config/${{ env.ENVIRONMENT }}.tfvars
+      #   run: |
+      #     for f in "$TFVARS_GLOBAL_FILE" "$TFVARS_ENVIRONMENT_FILE" "$TFVARS_CONFIG_LAYER_FILE"; do
+      #       if [ ! -f "$f" ]; then
+      #         echo "No tfvars file found at $f. Aborting."
+      #         exit 1
+      #       fi
+      #     done
+
+      #     echo "TFVARS_GLOBAL_FILE=$TFVARS_GLOBAL_FILE" >> $GITHUB_ENV
+      #     echo "TFVARS_ENVIRONMENT_FILE=$TFVARS_ENVIRONMENT_FILE" >> $GITHUB_ENV
+      #     echo "TFVARS_CONFIG_LAYER_FILE=$TFVARS_CONFIG_LAYER_FILE" >> $GITHUB_ENV
+
+      # - name: Terraform Plan
+      #   run: |
+      #     terraform \
+      #       -chdir=./terraform/configuration_layers/${{ matrix.configuration_layer }} \
+      #       plan \
+      #       -var-file="../../../$TFVARS_GLOBAL_FILE" \
+      #       -var-file="../../../$TFVARS_ENVIRONMENT_FILE" \
+      #       -var-file="../../../$TFVARS_CONFIG_LAYER_FILE" \
+      #       -out=${{ env.ENVIRONMENT }}-${{ matrix.configuration_layer }}.tfplan
