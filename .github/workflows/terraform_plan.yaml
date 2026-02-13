@@ -83,11 +83,14 @@ jobs:
         run: |
           echo "Received:"
           echo "${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}"
-          configuration_layers=fromJSON('${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}').configuration_layers
-          echo "Parsed configuration layers:"
-          for config_layer in $configuration_layers; do
-            echo "  - $config_layer"
-          done
+          parsed_structure=${{ fromJSON('${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}') }}
+          
+          echo "Parsed structure:"
+          echo "$parsed_structure"
+
+          # for config_layer in $configuration_layers; do
+          #   echo "  - $config_layer"
+          # done
 
       # - name: Terraform Init
       #   env:
