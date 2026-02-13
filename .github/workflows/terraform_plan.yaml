@@ -76,7 +76,12 @@ jobs:
           echo "toJSON:"
           CONFIG_LAYERS_JSON=$(jq -n --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
           echo "$CONFIG_LAYERS_JSON"
-          echo "$CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+          echo "CONFIG_LAYERS_JSON=$CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+
+      - name: Get Configuration Layers from JSON
+        run: |
+          echo "Received:"
+          echo "${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}""
 
       # - name: Terraform Init
       #   env:
