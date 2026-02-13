@@ -79,7 +79,9 @@ jobs:
           CONFIG_LAYERS_JSON=$(jq -n -c --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
 
           # Escape the JSON string to ensure it can be safely passed as an output variable
-          ESCAPED_CONFIG_LAYERS_JSON=$(echo "$CONFIG_LAYERS_JSON" | jq -R -s @json)
+          # We capture the output of the command, but pass the input as a bash here-string with '<<<'
+          # (if we use echo to pipe the value to jq, it adds a terminal newline)
+          ESCAPED_CONFIG_LAYERS_JSON=$(jq -R -s @json <<< "$CONFIG_LAYERS_JSON")
 
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
           echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
