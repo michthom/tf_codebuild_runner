@@ -73,16 +73,16 @@ jobs:
         id: get_config_layers
         run: |
           # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
-          CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
+          CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort | tr '\n' ' ')
 
           # Split the layers supplied per-line into objects and create a JSON object to contain them.
-          CONFIG_LAYERS_JSON=$(jq -n -c --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
+          CONFIG_LAYERS_JSON=$(jq --raw-input --compact-output 'split("\n") | { configuration_layers: . }' <<< "$CONFIG_LAYERS")
 
           # Escape the JSON string to ensure it can be safely passed as an output variable
           # We capture the output of the jq command, but pass the input as a bash here-string with '<<<'
           # (if we use echo to pipe the value to jq, it adds a terminal newline)
           # -s - slurp mode - read all input into a single string (instead of processing line by line)
-          ESCAPED_CONFIG_LAYERS_JSON=$(jq -s @json <<< "$CONFIG_LAYERS_JSON")
+          ESCAPED_CONFIG_LAYERS_JSON=$(jq --slurp @json <<< "$CONFIG_LAYERS_JSON")
 
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
           echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
