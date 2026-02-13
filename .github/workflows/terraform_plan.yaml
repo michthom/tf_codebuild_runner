@@ -82,7 +82,7 @@ jobs:
       - name: Get Configuration Layers from JSON
         run: |
           echo "Received:"
-          echo ${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON.configuration_layers }}
+          echo "${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON.configuration_layers }}"
           # echo ${{ fromJSON(steps.get_config_layers.outputs.CONFIG_LAYERS_JSON.configuration_layers) }}
           # for config_layer in ${{ fromJSON(steps.get_config_layers.outputs.CONFIG_LAYERS_JSON.configuration_layers) }}; do
           #   echo "  - $config_layer"
