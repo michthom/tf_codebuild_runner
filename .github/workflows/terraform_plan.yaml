@@ -73,8 +73,8 @@ jobs:
         id: get_config_layers
         run: |
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
-          # echo "CONFIG_LAYERS=$CONFIG_LAYERS" >> $GITHUB_OUTPUT 
-          echo "CONFIG_LAYERS=\n$CONFIG_LAYERS"
+          LIST_LAYERS=$(echo $CONFIG_LAYERS | tr '\n' '')
+          echo "CONFIG_LAYERS=$LIST_LAYERS" >> $GITHUB_OUTPUT
 
 
 
