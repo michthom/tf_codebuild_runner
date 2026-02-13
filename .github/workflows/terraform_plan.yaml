@@ -83,7 +83,7 @@ jobs:
         run: |
           echo "Received:"
           echo "${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}"
-          parsed_structure=${{ fromJSON('${{ steps.get_config_layers.outputs.CONFIG_LAYERS_JSON }}') }}
+          parsed_structure=${{ fromJSON( steps.get_config_layers.outputs.CONFIG_LAYERS_JSON ) }}
           
           echo "Parsed structure:"
           echo "$parsed_structure"
