@@ -105,13 +105,13 @@ jobs:
           # --slurp mode - read all input into a single string (instead of processing line by line)
           
           echo -e "\n\nEscaped JSON:"
-          ESCAPED_CONFIG_LAYERS_JSON=$(jq --slurp --raw-input @json <<< "$CONFIG_LAYERS_JSON")
+          ESCAPED_CONFIG_LAYERS_JSON=$(echo -n "$CONFIG_LAYERS_JSON" | jq --slurp --raw-input @json)
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
           # Example value:
           #   "[{\"configuration_layers\":[\"00_prerequisites\",\"10_data_storage\",\"20_networking\",\"30_virtual_desktop\"]}]"
 
           # Set the escaped JSON as an output variable for use in subsequent steps
-          echo -n "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+          echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
       - name: Get Configuration Layers from JSON
         run: |
