@@ -76,7 +76,7 @@ jobs:
           echo "CONFIG_LAYERS: "
           echo "$CONFIG_LAYERS"
           echo "toJSON:"
-          echo toJSON("$CONFIG_LAYERS")
+          echo "${{ toJSON("$CONFIG_LAYERS") }}""
           # LIST_LAYERS=$(echo $CONFIG_LAYERS | tr '\n' '')
           # echo "CONFIG_LAYERS=$LIST_LAYERS" >> $GITHUB_OUTPUT
 
