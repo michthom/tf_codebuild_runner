@@ -76,10 +76,17 @@ jobs:
           # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \;)
           echo "$CONFIG_LAYERS"
+          # Example value:
+          #   30_virtual_desktop
+          #   10_data_storage
+          #   00_prerequisites
+          #   20_networking
 
           echo -e "\n\nSorted layers:"
           SORTED_LAYERS=$(sort <<< "$CONFIG_LAYERS" | tr '\n' ' ' | sed 's/ $//')
           echo "$SORTED_LAYERS"
+          # Example value:
+          #   00_prerequisites 10_data_storage 20_networking 30_virtual_desktop
 
           # Split the layers supplied as a list into array elements and create a JSON object to contain them.
           # 'echo -n' prevents the addition of a newline character at the end of the string, which can interfere with JSON parsing later on.
@@ -91,12 +98,19 @@ jobs:
           echo -e "\n\nGenerated JSON:"
           CONFIG_LAYERS_JSON=$(echo -n "$SORTED_LAYERS" | jq --null-input --slurp --raw-input --compact-output 'inputs | split(" ") | { configuration_layers: . }')
           echo "$CONFIG_LAYERS_JSON"
+          # Example value:
+          #   {"configuration_layers":["00_prerequisites","10_data_storage","20_networking","30_virtual_desktop"]}
 
           # Escape the JSON to ensure it can be safely passed as an output variable
           # --slurp mode - read all input into a single string (instead of processing line by line)
-          ESCAPED_CONFIG_LAYERS_JSON=$(jq --slurp @json <<< "$CONFIG_LAYERS_JSON")
-
+          
+          echo -e "\n\nEscaped JSON:"
+          ESCAPED_CONFIG_LAYERS_JSON=$(jq --slurp --raw-input @json <<< "$CONFIG_LAYERS_JSON")
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
+          # Example value:
+          #   "[{\"configuration_layers\":[\"00_prerequisites\",\"10_data_storage\",\"20_networking\",\"30_virtual_desktop\"]}]"
+
+          # Set the escaped JSON as an output variable for use in subsequent steps
           echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
       - name: Get Configuration Layers from JSON
