@@ -94,9 +94,11 @@ jobs:
           echo "Parsed structure:"
           echo "$parsed_structure"
 
-          # for config_layer in $configuration_layers; do
-          #   echo "  - $config_layer"
-          # done
+          configuration_layers=$(echo "$parsed_structure" | jq -r '.configuration_layers[]')
+
+          for config_layer in $configuration_layers; do
+            echo "  - $config_layer"
+          done
 
       # - name: Terraform Init
       #   env:
