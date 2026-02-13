@@ -73,7 +73,7 @@ jobs:
         id: get_config_layers
         run: |
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \; | sort)
-          CONFIG_LAYERS_JSON=$(jq -n --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | configuration_layers: .')
+          CONFIG_LAYERS_JSON=$(jq -n --arg layers "$CONFIG_LAYERS" '$layers | split("\n") | { configuration_layers: . }')
           ESCAPED_CONFIG_LAYERS_JSON=$(echo "$CONFIG_LAYERS_JSON" | jq -R -s @json)
           echo "toJSON:"
           echo "$ESCAPED_CONFIG_LAYERS_JSON"
