@@ -72,10 +72,14 @@ jobs:
       - name: Get Configuration Layers
         id: get_config_layers
         run: |
+          echo -e "\n\nUnsorted layers:"
           # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
           CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \;)
+          echo "$CONFIG_LAYERS"
 
+          echo -e "\n\nSorted layers:"
           SORTED_LAYERS=$(sort <<< "$CONFIG_LAYERS" | tr '\n' ' ' | sed 's/ $//')
+          echo "$SORTED_LAYERS"
 
           # Split the layers supplied as a list into array elements and create a JSON object to contain them.
           # 'echo -n' prevents the addition of a newline character at the end of the string, which can interfere with JSON parsing later on.
@@ -83,7 +87,10 @@ jobs:
           # '--slurp' allows us to read the entire input as a single string, which is necessary since we are passing a list of layers as a single string.
           # '--raw-input' treats the input as raw text, not JSON data
           # '--compact-output' produces a one-line output.
-          CONFIG_LAYERS_JSON=$(echo -n "$SORTED_LAYERS" | jq --null-input --slurp --raw-input --compact-output '{ configuration_layers: [inputs] }')
+
+          echo -e "\n\nGenerated JSON:"
+          CONFIG_LAYERS_JSON=$(echo -n "$SORTED_LAYERS" | jq --null-input --slurp --raw-input --compact-output 'inputs | split(" ") | { configuration_layers: . }')
+          echo "$CONFIG_LAYERS_JSON"
 
           # Escape the JSON to ensure it can be safely passed as an output variable
           # --slurp mode - read all input into a single string (instead of processing line by line)
