@@ -2,6 +2,15 @@ name: Trigger Workflow - Env integration
 on:
   # Manual trigger of the workflow from the GitHub UI
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options:
+          - dev
+          - stg
+          - prd
 
 permissions:
   contents: read
@@ -26,8 +35,14 @@ jobs:
       - name: Get Account ID
         id: sts
         run: |
+          echo "Which environment are we deploying to?
+          echo "${{ github.event.inputs.environment }}"
+
           echo "Who am I? (aws sts get-caller-identity)"
           aws sts get-caller-identity
+
+          echo "What's the magic word?"
+          echo "${{ vars.MAGIC_WORD }}"
 
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           echo "AWS account number discovered to be: $ACCOUNT_ID"
