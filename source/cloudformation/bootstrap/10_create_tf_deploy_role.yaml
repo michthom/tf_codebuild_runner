@@ -127,9 +127,9 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: !Ref OIDCProviderAudience
                 token.actions.githubusercontent.com:sub: !Sub
-                  - "repo:${GH-Org}/${GH-Repo}:environment:${Env}"
-                  - GH-Org: !Ref GHOrg
-                    GH-Repo: !Ref GHRepo
+                  - "repo:${GHOrg}/${GHRepo}:environment:${Env}"
+                  - GHOrg: !Ref GHOrg
+                    GHRepo: !Ref GHRepo
                     Env: !Ref Environment
 
   # See AWS Documentation:
