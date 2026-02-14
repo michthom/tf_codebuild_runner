@@ -1,48 +1,77 @@
 # tf_codebuild_runner
 Sample repo to demonstrate use of GH runner in CodeBuild and automated plan and apply actions.
 
-# Components and configuration steps
+# Installation
 
-## GitHub repository
+## Create the foundation of your own project
 
-### Global variables
+* Clone the repository to your own machine. (`git clone https://github.com/michthom/tf_codebuild_runner.git my_cool_project`)
+* Remove the .git folder completely (`rm rf ./MY_COOL_PROJECT/.git`)
+* Set up your own local repository
+  * `cd ./MY_COOL_PROJECT/`
+  * `git init -b main`
+  * `git add .`
+  * `git commit -m "Initial commit of MY_COOL_PROJECT"`
+  * `git remote add origin https://github.com/ORGANISATION/MY_COOL_PROJECT.git`
 
-Repository settings
- * Secrets and variables / Actions
- * Variables tab
- * New repository variable
- * Name: AWS_REGION, Value: eu-west-2
+* Create an empty repository under yoru organisation on GitHub
+  * Set the repository name as given above e.g. MY_COOL_PROJECT
+  * Do NOT add a README, .gitignore or license
 
- Accessible as `${{ vars.AWS_REGION }}`
-
- Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#defining-configuration-variables-for-multiple-workflows)
+* Push the code up to the new GitHub repository
+  * `git push -u origin main`
 
 
-| Parameter | Value |
-|-----------|-------|
-| PROJECT_NAME | MyCoolProject |
-| AWS_REGION | eu-west-2 |
+## Create Terraform state buckets in your account/region
 
-### Environments and variables
+* Switch to the account and region to want to use for the state buckets
+* Use CloudFormation to deploy the stack template [00_create_tf_state_buckets.yaml](./source/cloudformation/bootstrap/00_create_tf_state_buckets.yaml)
+  for each of the `dev`, `stg` and `prd` environments.
+* Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new bucket names:
+  * `/{AWS::AccountId}/tf_state_bucket/dev`
+  * `/{AWS::AccountId}/tf_state_bucket/stg`
+  * `/{AWS::AccountId}/tf_state_bucket/prd`
 
-Settings / Environments
 
-Define an environment for dev, stg and prd
+## Create Terraform deployment role per environment
 
-Link deployments to branches ? To be decided later
+* Switch to the account and region to want to use for the state buckets
+* Use CloudFormation to deploy the stack template [10_create_tf_deploy_role.yaml](./source/cloudformation/bootstrap/10_create_tf_deploy_role.yaml)
+  for each of the `dev`, `stg` and `prd` environments.
 
-Add Environment variables for:
 
-| Parameter | dev | stg | prd |
-|-----------|-----|-----|-----|
-| ENVIRONMENT | dev | stg | prd |
-| AWS_ACCOUNT_NUMBER | 667532145122 | 667532145122 (for now) | 667532145122 (for now) |
-| TF_DEPLOY_ROLE_ARN | arn:aws:iam::667532145122:role/667532145122-codebuild-github-runner | {Ditto for now} | {Ditto for now}
-| TF_STATE_BUCKET | 667532145122-tf-state-dev-cbfe6a30 | 667532145122-tf-state-stg-08415b10 | 667532145122-tf-state-prd-243433b0 |
-| TF_STATE_BUCKET_REGION | eu-west-1 | eu-west-1 | eu-west-1 |
+## Configure the GitHub elements of the project
 
- Accessible as `${{ vars.ENVIRONMENT }}`
+* In Settings / Secrets and variables / Actions
+  * Go to the Variables tab and create
+
+    | Parameter | Value |
+    |-----------|-------|
+    | PROJECT_NAME | MY_COOL_PROJECT |
+
+  Accessible as `${{ vars.PROJECT_NAME }}` for example.
+
+Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#creating-configuration-variables-for-a-repository)
+
+
+* In Settings/Environments
+  * Create each of the `dev`, `stg` and `prd` environments.
+* In `Settings / Environments`
+  for each environment in `dev`, `stg` and `prd`
+  * Configure the following variables for each environment:
+
+  | Variable  | dev | stg | prd |
+  |-----------|-----|-----|-----|
+  | AWS_ACCOUNT_NUMBER | Your chosen account | Your chosen account | Your chosen account |
+  | AWS_REGION | Your chosen account | Your chosen account | Your chosen account |
+  | TF_DEPLOY_ROLE_ARN | Obtained from steps above | Obtained from steps above | Obtained from steps above |
+  | TF_STATE_BUCKET | Obtained from steps above | Obtained from steps above | Obtained from steps above |
+  | TF_STATE_BUCKET_REGION | Your chosen region | Your chosen region | Your chosen region |
+
+  Accessible as `${{ vars.ENVIRONMENT }}`
 
   Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#creating-configuration-variables-for-an-environment)
 
-## AWS Account(s)
+* GitHub Runner configuration
+  
+  TBC
