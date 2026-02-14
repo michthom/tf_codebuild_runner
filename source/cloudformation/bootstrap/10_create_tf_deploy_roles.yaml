@@ -86,6 +86,7 @@ Parameters:
 
 Resources:
 
+  # FIXME - OIDC provider is unique to the account, so this should be created in a separate stack and shared via SSM Parameter Store.
   GitHubOIDCProvider:
     Type: AWS::IAM::OIDCProvider
     Properties:

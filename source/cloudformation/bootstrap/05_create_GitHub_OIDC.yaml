@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: GitHub OIDC provider for federated authentication of GitHub Actions runners to AWS
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: OIDC Provider Configuration
+        Parameters:
+          - OIDCProviderURL
+          - OIDCProviderAudience
+
+    ParameterLabels:
+      OIDCProviderURL:
+        default: OIDC Provider URL
+      OIDCProviderAudience:
+        default: OIDC Provider Audience
+
+Parameters:
+  OIDCProviderURL:
+    Type: String
+    Description: The URL of the OIDC provider for GitHub Actions
+    Default: https://token.actions.githubusercontent.com
+    AllowedPattern: '^https://[a-zA-Z0-9.-]+$'
+    ConstraintDescription: Must be a valid URL starting with https://
+  OIDCProviderAudience:
+    Type: String
+    Description: The audience for the OIDC provider for GitHub Actions
+    Default: sts.amazonaws.com
+    AllowedPattern: '^[a-zA-Z0-9.-]+$'
+    ConstraintDescription: Must be a valid audience string (e.g., sts.amazonaws.com)
+
+Resources:
+
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !Ref OIDCProviderURL
+      ClientIdList:
+        - !Ref OIDCProviderAudience
+
+  SSMParameterGitHubOIDCProviderARN:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::AccountId}/github-oidc-provider-arn"
+      Type: String
+      Value: !GetAtt GitHubOIDCProvider.Arn
+
+Outputs:
+  GitHubOIDCProviderARN:
+    Description: The ARN of the GitHub OIDC provider
+    Value: !Ref GitHubOIDCProvider
