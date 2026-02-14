@@ -1,0 +1,213 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Prerequisites, policy and role for GitHub runners to assume when deploying Terraform code
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Environment Configuration
+        Parameters:
+          - AWSRegion
+          - ProjectName
+          - Environment
+      - Label:
+          default: OIDC Provider Configuration
+        Parameters:
+          - OIDCProviderURL
+          - OIDCProviderAudience
+      - Label:
+          default: GitHub Repository Information
+        Parameters:
+          - GHOrg
+          - GHRepo
+
+    ParameterLabels:
+      OIDCProviderURL:
+        default: OIDC Provider URL
+      OIDCProviderAudience:
+        default: OIDC Provider Audience
+      AWSRegion:
+        default: AWS Region
+      ProjectName:
+        default: Project Name
+      Environment:
+        default: Environment Name (e.g., dev, stg, prd)
+      GHOrg:
+        default: GitHub Organization
+      GHRepo:
+        default: GitHub Repository
+
+Parameters:
+  OIDCProviderURL:
+    Type: String
+    Description: The URL of the OIDC provider for GitHub Actions
+    Default: https://token.actions.githubusercontent.com
+    AllowedPattern: '^https://[a-zA-Z0-9.-]+$'
+    ConstraintDescription: Must be a valid URL starting with https://
+  OIDCProviderAudience:
+    Type: String
+    Description: The audience for the OIDC provider for GitHub Actions
+    Default: sts.amazonaws.com
+    AllowedPattern: '^[a-zA-Z0-9.-]+$'
+    ConstraintDescription: Must be a valid audience string (e.g., sts.amazonaws.com)
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: MyCoolProject
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must be 3–20 characters, letters, numbers, or hyphens. 
+  Environment:
+    Type: String
+    Description: Environment name
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: Must be one of the following - dev, stg, prd.
+  GHOrg:
+    Type: String
+    Description: GitHub Organization name
+    Default: michthom
+    MinLength: 1
+    MaxLength: 39
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must be 1–39 characters, letters, numbers, or hyph
+  GHRepo:
+    Type: String
+    Description: GitHub Repository name
+    Default: tf_codebuild_runner
+    MinLength: 1
+    MaxLength: 100
+    AllowedPattern: '^[a-zA-Z0-9._-]+$'
+    ConstraintDescription: Must be 1–100 characters, letters, numbers, hyphens, underscores, or periods.
+
+Resources:
+
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !Ref OIDCProviderURL
+      ClientIdList:
+        - !Ref OIDCProviderAudience
+
+  TerraformDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub
+        - "${Prefix}-${Env}-${Suffix}"
+        - Prefix: TF-Deployment
+          Env: !Ref Environment
+          Suffix: !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref AWS::StackId
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref "AWS::AccountId"
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOIDCProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: !Ref OIDCProviderAudience
+                token.actions.githubusercontent.com:sub: !Sub
+                  - "repo:${GH-Org}/${GH-Repo}:environment:${Env}"
+                  - GH-Org: !Ref GHOrg
+                    GH-Repo: !Ref GHRepo
+                    Env: !Ref Environment
+
+  # See AWS Documentation:
+  # https://docs.aws.amazon.com/codebuild/latest/userguide/action-runner.html
+
+  DeploymentPolicyCodeBuild:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${Prefix}-${Env}-${Suffix}"
+        - Prefix: TF-Deployment
+          Env: !Ref Environment
+          Suffix: CodeBuild
+      Description: Policy for CodeBuild to deploy Terraform code
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-tf-state-${Environment}/*"
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-tf-state-${Environment}"
+
+# To have a dynamic workflow that can call the correct self-hosted GitHub Runner in CodeBuild, regardless of the account that is hosting the
+# dev, stg or prd environments, we need to split the job in two, where an initial part runs on a **GitHub** hosted runner (not in CodeBuild).
+# That inital access requires the AWS account to have an OIDC IdP for GitHub:
+# [GitHub documentation](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws)
+# [AWS Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
+# | Parameter |  Value |
+# | --------- |  ----- |
+# | Provider URL | https://token.actions.githubusercontent.com |
+# | Audience | sts.amazonaws.com |
+# Thumbprint is NOT required - that's a fallback mechanism.
+
+# ...and also a trust policy for the deployment account that links the GitHub repo.
+# N.B. the AWS documentation is misleading suggesting the `token.actions.githubusercontent.com:sub` should include `repo:GitHubOrg/GitHubRepo:ref:refs/heads/GitHubBranch` but experiment showed that GitHub sets this value to `repo:GitHubOrg/GitHubRepo:environment:xxx`
+
+# ```
+# {
+# 	"Version": "2012-10-17",
+# 	"Statement": [
+# 		{
+# 			"Sid": "AllowCodeBuildRunner",
+# 			"Effect": "Allow",
+# 			"Principal": {
+# 				"Service": "codebuild.amazonaws.com"
+# 			},
+# 			"Action": "sts:AssumeRole",
+# 			"Condition": {
+# 				"StringEquals": {
+# 					"aws:SourceAccount": "667532145122"
+# 				}
+# 			}
+# 		},
+# 		{
+# 			"Sid": "AllowGitHubRunner",
+# 			"Effect": "Allow",
+# 			"Principal": {
+# 				"Federated": "arn:aws:iam::667532145122:oidc-provider/token.actions.githubusercontent.com"
+# 			},
+# 			"Action": "sts:AssumeRoleWithWebIdentity",
+# 			"Condition": {
+# 				"StringEquals": {
+# 					"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+# 				},
+# 				"ForAnyValue:StringEquals": {
+# 					"token.actions.githubusercontent.com:sub": [
+# 						"repo:michthom/tf_codebuild_runner:environment:dev",
+# 						"repo:michthom/tf_codebuild_runner:environment:stg",
+# 						"repo:michthom/tf_codebuild_runner:environment:prd"
+# 					]
+# 				}
+# 			}
+# 		}
+# 	]
+# }
+# ```

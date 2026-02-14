@@ -3,7 +3,7 @@
 To have a dynamic workflow that can call the correct self-hosted GitHub Runner in CodeBuild, regardless of the account that is hosting the
 dev, stg or prd environments, we need to split the job in two, where an initial part runs on a **GitHub** hosted runner (not in CodeBuild).
 
-That inital access requires teh AWS account to have an OIDC IdP for GitHub:
+That inital access requires the AWS account to have an OIDC IdP for GitHub:
 
 [GitHub documentation](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws)
 
