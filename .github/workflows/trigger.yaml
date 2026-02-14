@@ -1,4 +1,4 @@
-name: Terraform Plan
+name: Trigger Workflow - Env integration
 on:
   # Manual trigger of the workflow from the GitHub UI
   workflow_dispatch:
