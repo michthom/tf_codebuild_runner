@@ -35,7 +35,7 @@ jobs:
       - name: Get Account ID
         id: sts
         run: |
-          echo "Which environment are we deploying to?
+          echo "Which environment are we deploying to?"
           echo "${{ github.event.inputs.environment }}"
 
           echo "Who am I? (aws sts get-caller-identity)"
