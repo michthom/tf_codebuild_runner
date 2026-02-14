@@ -1,0 +1,34 @@
+name: Terraform Plan
+on:
+  # Manual trigger of the workflow from the GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read
+
+jobs:
+  resolve-account:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    outputs:
+      account_id: ${{ steps.sts.outputs.account_id }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get Account ID
+        id: sts
+        run: |
+          echo "Who am I? (aws sts get-caller-identity)"
+          aws sts get-caller-identity
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "AWS account number discovered to be: $ACCOUNT_ID"
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT

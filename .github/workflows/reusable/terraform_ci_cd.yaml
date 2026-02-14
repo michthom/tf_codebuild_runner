@@ -1,0 +1,28 @@
+name: Terraform CI CD Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      github_context:
+        description: 'GitHub context passed from the calling workflow'
+        required: true
+        type: string
+      environment:
+        description: 'Deployment environment (e.g., dev, stg, prd)'
+        required: true
+        type: string
+
+jobs:
+  Terraform-Plan-Job:
+    runs-on:
+      - codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }} 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+
