@@ -136,15 +136,17 @@ jobs:
           echo "config_layers_json=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
   terraform-job:
-    name: Terraform operation in CodeBuild
     runs-on: codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - env:
+      - name: Terraform operation in CodeBuild
+
+        env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
           ACTION: ${{ github.event.inputs.action }}
           ACCOUNT_ID: ${{ needs.resolve-account.outputs.account_id }}
           CONFIG_LAYERS_JSON: ${{ needs.resolve-account.outputs.config_layers_json }}
-      - run: |-
+          
+        run: |-
           echo "Environment: $ENVIRONMENT"
           echo "Action: $ACTION"
           echo "AWS Account ID: $ACCOUNT_ID"
