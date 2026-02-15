@@ -193,17 +193,18 @@ jobs:
 
           for config_layer in $configuration_layers; do
 
-            echo -e "\n============================================================="
+            echo -e "\n\n============================================================="
             echo "Terraform INIT in config layer: $config_layer"
 
             # Terraform init
             terraform -chdir=source/terraform/configuration_layers/$config_layer init \
-              -backend-config=../../environments/${ENVIRONMENT}.tfbackend
+              -backend-config=../../environments/${ENVIRONMENT}.tfbackend \
+              -reconfigure
 
             # Terraform plan / apply / destroy
             case "$ACTION" in
               "plan")
-                echo -e "\n============================================================="
+                echo -e "\n\n============================================================="
                 echo "Terraform PLAN in config layer: $config_layer"
 
                 terraform -chdir=source/terraform/configuration_layers/$config_layer plan \
@@ -212,22 +213,22 @@ jobs:
                   -var-file=../../global.tfvars
                 ;;
               "apply")
-                echo -e "\n============================================================="
+                echo -e "\n\n============================================================="
                 echo "Terraform APPLY in config layer: $config_layer"
 
-                terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve
+                terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve \
                   -var-file=./config/${ENVIRONMENT}.tfvars \
                   -var-file=../../environments/${ENVIRONMENT}.tfvars \
                   -var-file=../../global.tfvars
                 ;;
               "destroy")
-                echo -e "\n============================================================="
+                echo -e "\n\n============================================================="
                 echo "Terraform DESTROY in config layer: $config_layer"
 
-                terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve
+                terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve \
                   -var-file=./config/${ENVIRONMENT}.tfvars \
-                  -var-file=../../../environments/${ENVIRONMENT}.tfvars \
-                  -var-file=../../../global.tfvars
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
                 ;;
               *)
                 echo "Invalid action: $ACTION"
