@@ -139,6 +139,41 @@ jobs:
     runs-on: codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
     needs: resolve-account
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.TF_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          audience: sts.amazonaws.com
+          
+      - name: Get Account ID
+        id: sts
+        run: |
+          echo "Which environment are we deploying to?"
+          echo "${{ github.event.inputs.environment }}"
+
+          echo "Who am I? (aws sts get-caller-identity)"
+          aws sts get-caller-identity
+
+          echo "What's the magic word?"
+          echo "${{ vars.MAGIC_WORD }}"
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "AWS account number discovered to be: $ACCOUNT_ID"
+
+          # Make available as an output
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # See: https://github.com/hashicorp/setup-terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          # FIXME - should get this from global vars...
+          terraform_version: "~ 1.14.0"
+
       - name: Terraform operation in CodeBuild
 
         env:
