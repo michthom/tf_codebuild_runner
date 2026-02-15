@@ -152,9 +152,9 @@ jobs:
           echo "AWS Account ID: $ACCOUNT_ID"
           echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
 
-          # parsed_structure=${{ fromJSON( $CONFIG_LAYERS_JSON ) }}
+          # parsed_structure=${{ fromJSON( needs.resolve-account.outputs.config_layers_json ) }}
           # configuration_layers=$(echo "$parsed_structure" | jq -r '.configuration_layers[]')
 
           # for config_layer in $configuration_layers; do
           #   echo "  - $config_layer"
-          # done
+          # done  
