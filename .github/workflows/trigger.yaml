@@ -11,6 +11,17 @@ on:
           - dev
           - stg
           - prd
+        default: dev
+
+      action:
+        description: Action to perform
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        default: plan
 
 permissions:
   contents: read
@@ -19,7 +30,14 @@ permissions:
 
 jobs:
   resolve-account:
+    
+    # Runs on GitHub hosted runners to resolve the AWS account ID and configuration layers before delegating to CodeBuild for the subsequent execution.
+
     runs-on: ubuntu-latest
+
+    # This is set in the workflow_dispatch inputs and allows us to pass the selected environment to the subsequent CodeBuild job.
+    # When triggered from an Action, how do we know which is which?
+
     environment: ${{ github.event.inputs.environment }}
 
     outputs:
@@ -48,3 +66,80 @@ jobs:
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           echo "AWS account number discovered to be: $ACCOUNT_ID"
           echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Get the list of configuration layers from the repository and set it as an output variable
+      - name: Get Configuration Layers
+        id: get_config_layers
+        run: |
+          # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
+
+          CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \;)
+
+          # Example value:
+          #   30_virtual_desktop
+          #   10_data_storage
+          #   00_prerequisites
+          #   20_networking
+
+          if action=$(echo "${{ github.event.inputs.action }}" | tr '[:upper:]' '[:lower:]'); then
+            case "$action" in
+              "plan"|"apply")
+                SORTED_LAYERS=$(sort <<< "$CONFIG_LAYERS" | tr '\n' ' ' | sed 's/ $//')
+                ;;
+              "destroy")
+                SORTED_LAYERS=$(sort -r <<< "$CONFIG_LAYERS" | tr '\n' ' ' | sed 's/ $//')
+                ;;
+              *)
+                echo "Invalid action: $action"
+                exit 1
+                ;;
+            esac
+          else
+            echo "Failed to read action input"
+            exit 1
+          fi
+
+          # Example value for plan / apply:
+          #   00_prerequisites 10_data_storage 20_networking 30_virtual_desktop
+
+          # Example value for destroy (reverse order):
+          #   30_virtual_desktop 20_networking 10_data_storage 00_prerequisites
+
+          # Split the layers supplied as a list into array elements and create a JSON object to contain them.
+          # 'echo -n' prevents the addition of a newline character at the end of the string, which can interfere with JSON parsing later on.
+          # '--null-input' tells jq to not expect any input and allows us to create JSON from scratch.
+          # '--slurp' allows us to read the entire input as a single string, which is necessary since we are passing a list of layers as a single string.
+          # '--raw-input' treats the input as raw text, not JSON data
+          # '--compact-output' produces a one-line output.
+
+          CONFIG_LAYERS_JSON=$(echo -n "$SORTED_LAYERS" | jq --null-input --slurp --raw-input --compact-output 'inputs | split(" ") | { configuration_layers: . }')
+
+          # Example value:
+          #   {"configuration_layers":["00_prerequisites","10_data_storage","20_networking","30_virtual_desktop"]}
+
+          # Escape the JSON to ensure it can be safely passed as an output variable
+          # --slurp mode - read all input into a single string (instead of processing line by line)
+          
+          ESCAPED_CONFIG_LAYERS_JSON=$(echo -n "$CONFIG_LAYERS_JSON" | jq --slurp --raw-input @json)
+
+          # Example value:
+          #   "[{\"configuration_layers\":[\"00_prerequisites\",\"10_data_storage\",\"20_networking\",\"30_virtual_desktop\"]}]"
+
+          # Set the escaped JSON as an output variable for use in subsequent steps
+          echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+
+      - name: Get Configuration Layers from JSON
+        run: |
+          # The JSON string is passed as an output variable from the previous step, but it is escaped to ensure it can be safely transmitted.
+          # We need to unescape it and parse the JSON to extract the configuration layers.
+
+          parsed_structure=${{ fromJSON( steps.get_config_layers.outputs.CONFIG_LAYERS_JSON ) }}
+          configuration_layers=$(echo "$parsed_structure" | jq -r '.configuration_layers[]')
+
+          for config_layer in $configuration_layers; do
+            echo "  - $config_layer"
+          done
+          
