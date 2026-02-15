@@ -31,7 +31,8 @@ permissions:
 jobs:
   resolve-account:
     
-    # Runs on GitHub hosted runners to resolve the AWS account ID and configuration layers before delegating to CodeBuild for the subsequent execution.
+    # Runs on GitHub hosted runners to resolve the AWS account ID and
+    # configuration layers before delegating to CodeBuild for the subsequent execution.
 
     runs-on: ubuntu-latest
 
@@ -42,6 +43,7 @@ jobs:
 
     outputs:
       account_id: ${{ steps.sts.outputs.account_id }}
+      config_layers_json: ${{ steps.get_config_layers.outputs.config_layers_json }}
 
     steps:
       - name: Configure AWS credentials
@@ -65,6 +67,8 @@ jobs:
 
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           echo "AWS account number discovered to be: $ACCOUNT_ID"
+
+          # Make available as an output
           echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
 
       - name: Checkout Repository
@@ -129,17 +133,26 @@ jobs:
           #   "[{\"configuration_layers\":[\"00_prerequisites\",\"10_data_storage\",\"20_networking\",\"30_virtual_desktop\"]}]"
 
           # Set the escaped JSON as an output variable for use in subsequent steps
-          echo "CONFIG_LAYERS_JSON=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+          echo "config_layers_json=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
 
-      - name: Get Configuration Layers from JSON
-        run: |
-          # The JSON string is passed as an output variable from the previous step, but it is escaped to ensure it can be safely transmitted.
-          # We need to unescape it and parse the JSON to extract the configuration layers.
+  terraform-job:
+    name: Terraform operation in CodeBuild
+    runs-on: codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          ACTION: ${{ github.event.inputs.action }}
+          ACCOUNT_ID: ${{ needs.resolve-account.outputs.account_id }}
+          CONFIG_LAYERS_JSON: ${{ needs.resolve-account.outputs.config_layers_json }}
+      - run: |-
+          echo "Environment: $ENVIRONMENT"
+          echo "Action: $ACTION"
+          echo "AWS Account ID: $ACCOUNT_ID"
+          echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
 
-          parsed_structure=${{ fromJSON( steps.get_config_layers.outputs.CONFIG_LAYERS_JSON ) }}
+          parsed_structure=${{ fromJSON( $CONFIG_LAYERS_JSON ) }}
           configuration_layers=$(echo "$parsed_structure" | jq -r '.configuration_layers[]')
 
           for config_layer in $configuration_layers; do
             echo "  - $config_layer"
           done
-          
