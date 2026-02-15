@@ -88,7 +88,7 @@ Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workfl
   | Variable  | dev | stg | prd |
   |-----------|-----|-----|-----|
   | AWS_ACCOUNT_NUMBER | 184161904230 | 367560037806 | 681574184492 |
-  | AWS_REGION | eu-west-2 | Yeu-west-2 | eu-west-2 |
+  | AWS_REGION | eu-west-2 | eu-west-2 | eu-west-2 |
   | TF_DEPLOY_ROLE_ARN | Obtained from steps above | Obtained from steps above | Obtained from steps above |
   | TF_STATE_BUCKET | Obtained from steps above | Obtained from steps above | Obtained from steps above |
   | TF_STATE_BUCKET_REGION | eu-west-2 | eu-west-2 | eu-west-2 |
@@ -97,12 +97,19 @@ Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workfl
 
   Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#creating-configuration-variables-for-an-environment)
 
-## GitHub OIDC Identity Provider
-  
-For each of the unique accounts hosting any of the `dev`, `stg` and `prd` environments (e.g. if all envirionments are in one account you only need to do this once)
-* Switch to the account and region you set up.
-* Use CloudFormation to deploy the stack template [05_create_GitHub_OIDC.yaml](./source/cloudformation/bootstrap/05_create_GitHub_OIDC.yaml)
+## Set up GitHub Runner project in CodeBuild
 
-* Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new provider ARN, and audience:
-  * `/${AWS::AccountId}/github-oidc-provider/arn`
-  * `/${AWS::AccountId}/github-oidc-provider/audience`
+ * [Tutorial](https://docs.aws.amazon.com/codebuild/latest/userguide/action-runner.html)
+
+ * Needs an active GitHub App token for authentication
+
+ * Needs the AWS Connector for GitHub installed as an application in GitHub - listing each repo that can be used (or all in organisation)
+
+ * Needs a service role that CodeBuild can assume, which in turn allowes it to assume GitHub's OIDC-authenticated identity 
+ * Needs a VPC, at least a public subnet with NAT Gateway and Internet Gateway and a private subnet with route to the NAT gateway for 0.0.0.0/0
+ * Needs CloudWatch log group
+ 
+ * ${AWS::AccountId}-github-runner-${ENDVIRONMENT}
+ * 
+
+Can we adapt the [sample from AWS](https://github.com/aws-samples/sample-aws-security-incident-response-integrations/blob/main/codebuild-facility.yaml)?

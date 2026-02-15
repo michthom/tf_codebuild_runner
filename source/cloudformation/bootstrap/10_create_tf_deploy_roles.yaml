@@ -65,7 +65,7 @@ Parameters:
   AWSRegion:
     Type: String
     Description: AWS Region to deploy resources in
-    Default: eu-west-1
+    Default: eu-west-2
     AllowedValues:
       - us-east-1
       - us-west-2
