@@ -137,6 +137,7 @@ jobs:
 
   terraform-job:
     runs-on: codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    needs: resolve-account
     steps:
       - name: Terraform operation in CodeBuild
 
