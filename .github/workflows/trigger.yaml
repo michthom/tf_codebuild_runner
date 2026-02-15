@@ -74,9 +74,9 @@ jobs:
       - name: Get Configuration Layers
         id: get_config_layers
         run: |
-          # Get the list of configuration layers (subdirectories in terraform/configuration_layers) and convert it to a JSON array          
+          # Get the list of configuration layers (subdirectories in source/terraform/configuration_layers) and convert it to a JSON array          
 
-          CONFIG_LAYERS=$(find terraform/configuration_layers -maxdepth 1 -type d -not -path "terraform/configuration_layers" -exec basename {} \;)
+          CONFIG_LAYERS=$(find source/terraform/configuration_layers -maxdepth 1 -type d -not -path "source/terraform/configuration_layers" -exec basename {} \;)
 
           # Example value:
           #   30_virtual_desktop
