@@ -1,4 +1,4 @@
 bucket         = "667532145122-tfstate-prd-4de04bc0"
-region         = "eu-west-1"
+region         = "eu-west-2"
 use_lockfile   = true
 encrypt        = true
