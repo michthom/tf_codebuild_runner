@@ -22,25 +22,38 @@ Sample repo to demonstrate use of GH runner in CodeBuild and automated plan and 
   * `git push -u origin main`
 
 
-## Create Terraform state buckets in your account/region
+## Create remote Terraform state backends
 
-* Switch to the account and region to want to use for the state buckets
+Switch to the account and region you want to use for the state buckets. The templates assume that the state bucket is in the same account as the corresponding
+deployed environment.
+
+This could be a separate account to the deployed environments, but if you do that you'll need to ensure the cross-account permissions are added to allow
+the [`dev|stg|prd`] accounts to write to their respective state buckets. 
+
+### S3 buckets
+
 * Use CloudFormation to deploy the stack template [00_create_tf_state_buckets.yaml](./source/cloudformation/bootstrap/00_create_tf_state_buckets.yaml)
   for each of the `dev`, `stg` and `prd` environments.
+
 * Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new bucket names:
   * `/{AWS::AccountId}/tf_state_bucket/dev`
   * `/{AWS::AccountId}/tf_state_bucket/stg`
   * `/{AWS::AccountId}/tf_state_bucket/prd`
 
 
-## Create Terraform deployment role per environment
+## Terraform deployment roles
 
-* Switch to the account and region to want to use for the state buckets
 * Use CloudFormation to deploy the stack template [10_create_tf_deploy_role.yaml](./source/cloudformation/bootstrap/10_create_tf_deploy_role.yaml)
-  for each of the `dev`, `stg` and `prd` environments.
+
+* Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new role ARNs:
+  * `/{AWS::AccountId}/tf_deployment_role_arn/dev`
+  * `/{AWS::AccountId}/tf_deployment_role_arn/stg`
+  * `/{AWS::AccountId}/tf_deployment_role_arn/prd`
 
 
 ## Configure the GitHub elements of the project
+
+### Repository-level changes
 
 * In Settings / Secrets and variables / Actions
   * Go to the Variables tab and create
@@ -53,6 +66,7 @@ Sample repo to demonstrate use of GH runner in CodeBuild and automated plan and 
 
 Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#creating-configuration-variables-for-a-repository)
 
+### Environment-level changes
 
 * In Settings/Environments
   * Create each of the `dev`, `stg` and `prd` environments.
@@ -63,7 +77,7 @@ Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workfl
   | Variable  | dev | stg | prd |
   |-----------|-----|-----|-----|
   | AWS_ACCOUNT_NUMBER | Your chosen account | Your chosen account | Your chosen account |
-  | AWS_REGION | Your chosen account | Your chosen account | Your chosen account |
+  | AWS_REGION | Your chosen region | Your chosen region | Your chosen region |
   | TF_DEPLOY_ROLE_ARN | Obtained from steps above | Obtained from steps above | Obtained from steps above |
   | TF_STATE_BUCKET | Obtained from steps above | Obtained from steps above | Obtained from steps above |
   | TF_STATE_BUCKET_REGION | Your chosen region | Your chosen region | Your chosen region |
@@ -72,6 +86,8 @@ Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workfl
 
   Reference: [Github link](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables#creating-configuration-variables-for-an-environment)
 
-* GitHub Runner configuration
+## GitHub OIDC Identity Provider
   
-  TBC
+For each of the unique accounts hosting any of the `dev`, `stg` and `prd` environments (e.g. if all envirionments are in one account you only need to do this once)
+* Switch to the account and region you set up.
+* Use CloudFormation to deploy the stack template [05_create_GitHub_OIDC.yaml](./source/cloudformation/bootstrap/05_create_GitHub_OIDC.yaml)
