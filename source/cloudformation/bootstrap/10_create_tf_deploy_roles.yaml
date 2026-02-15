@@ -11,21 +11,12 @@ Metadata:
           - ProjectName
           - Environment
       - Label:
-          default: OIDC Provider Configuration
-        Parameters:
-          - OIDCProviderURL
-          - OIDCProviderAudience
-      - Label:
           default: GitHub Repository Information
         Parameters:
           - GHOrg
           - GHRepo
 
     ParameterLabels:
-      OIDCProviderURL:
-        default: OIDC Provider URL
-      OIDCProviderAudience:
-        default: OIDC Provider Audience
       AWSRegion:
         default: AWS Region
       ProjectName:
@@ -38,18 +29,6 @@ Metadata:
         default: GitHub Repository
 
 Parameters:
-  OIDCProviderURL:
-    Type: String
-    Description: The URL of the OIDC provider for GitHub Actions
-    Default: https://token.actions.githubusercontent.com
-    AllowedPattern: '^https://[a-zA-Z0-9.-]+$'
-    ConstraintDescription: Must be a valid URL starting with https://
-  OIDCProviderAudience:
-    Type: String
-    Description: The audience for the OIDC provider for GitHub Actions
-    Default: sts.amazonaws.com
-    AllowedPattern: '^[a-zA-Z0-9.-]+$'
-    ConstraintDescription: Must be a valid audience string (e.g., sts.amazonaws.com)
   ProjectName:
     Type: String
     Description: Name of the project (used for resource naming)
@@ -83,16 +62,18 @@ Parameters:
     MaxLength: 100
     AllowedPattern: '^[a-zA-Z0-9._-]+$'
     ConstraintDescription: Must be 1–100 characters, letters, numbers, hyphens, underscores, or periods.
+  AWSRegion:
+    Type: String
+    Description: AWS Region to deploy resources in
+    Default: eu-west-1
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+      - eu-west-2
+    ConstraintDescription: Must be a valid AWS region (e.g., us-east-1, us-west-2, eu-west-1, eu-west-2, ap-southeast-1, ap-southeast-2)
 
 Resources:
-
-  # FIXME - OIDC provider is unique to the account, so this should be created in a separate stack and shared via SSM Parameter Store.
-  GitHubOIDCProvider:
-    Type: AWS::IAM::OIDCProvider
-    Properties:
-      Url: !Ref OIDCProviderURL
-      ClientIdList:
-        - !Ref OIDCProviderAudience
 
   TerraformDeploymentRole:
     Type: AWS::IAM::Role
@@ -122,11 +103,11 @@ Resources:
                 aws:SourceAccount: !Ref "AWS::AccountId"
           - Effect: Allow
             Principal:
-              Federated: !Ref GitHubOIDCProvider
+              Federated: !Sub "{{resolve:ssm:/${AWS::AccountId}/github-oidc-provider/arn}}"
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                token.actions.githubusercontent.com:aud: !Ref OIDCProviderAudience
+                token.actions.githubusercontent.com:aud: !Sub "{{resolve:ssm:/${AWS::AccountId}/github-oidc-provider/audience}}"
                 token.actions.githubusercontent.com:sub: !Sub
                   - "repo:${GHOrg}/${GHRepo}:environment:${Env}"
                   - GHOrg: !Ref GHOrg
@@ -136,6 +117,9 @@ Resources:
   # See AWS Documentation:
   # https://docs.aws.amazon.com/codebuild/latest/userguide/action-runner.html
 
+
+  # FIXME - the tf state buckets are incorrect
+  
   DeploymentPolicyCodeBuild:
     Type: AWS::IAM::ManagedPolicy
     Properties:

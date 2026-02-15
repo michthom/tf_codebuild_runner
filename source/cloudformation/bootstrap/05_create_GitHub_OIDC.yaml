@@ -42,10 +42,17 @@ Resources:
   SSMParameterGitHubOIDCProviderARN:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${AWS::AccountId}/github-oidc-provider-arn"
+      Name: !Sub "/${AWS::AccountId}/github-oidc-provider/arn"
       Type: String
       Value: !GetAtt GitHubOIDCProvider.Arn
 
+  SSMParameterGitHubOIDCProviderAudience:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::AccountId}/github-oidc-provider/audience"
+      Type: String
+      Value: !Ref OIDCProviderAudience
+      
 Outputs:
   GitHubOIDCProviderARN:
     Description: The ARN of the GitHub OIDC provider
