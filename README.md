@@ -45,7 +45,7 @@ the [`dev|stg|prd`] accounts to write to their respective state buckets.
   
 For each of the unique accounts hosting any of the `dev`, `stg` and `prd` environments (e.g. if all envirionments are in one account you only need to do this once)
 * Switch to the account and region you set up.
-* Use CloudFormation to deploy the stack template [05_create_GitHub_OIDC.yaml](./source/cloudformation/bootstrap/05_create_GitHub_OIDC.yaml)
+* Use CloudFormation to deploy the stack template [10_create_GitHub_OIDC.yaml](./source/cloudformation/bootstrap/10_create_GitHub_OIDC.yaml)
 
 * Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new provider ARN, and audience:
   * `/${AWS::AccountId}/github-oidc-provider/arn`
@@ -54,7 +54,7 @@ For each of the unique accounts hosting any of the `dev`, `stg` and `prd` enviro
 
 ## Terraform deployment roles
 
-* Use CloudFormation to deploy the stack template [10_create_tf_deploy_role.yaml](./source/cloudformation/bootstrap/10_create_tf_deploy_role.yaml)
+* Use CloudFormation to deploy the stack template [20_create_tf_deploy_role.yaml](./source/cloudformation/bootstrap/20_create_tf_deploy_role.yaml)
 
 * Verify the stacks deployed as expected and created the Parameter Store entries in whose values you will find the new role ARNs:
   * `/${AWS::AccountId}/tf_deployment_role_arn/dev`
