@@ -157,5 +157,46 @@ jobs:
           configuration_layers=$(echo "$parsed_structure" | jq -r '.configuration_layers[]')
 
           for config_layer in $configuration_layers; do
-            echo "  - $config_layer"
+
+            echo -e "\n============================================================="
+            echo "Terraform INIT in config layer: $config_layer"
+
+            # Terraform init
+            terraform -chdir=source/terraform/configuration_layers/$config_layer init \
+              -backend-config=../../environments/${ENVIRONMENT}.tfbackend
+
+            # Terraform plan / apply / destroy
+            case "$ACTION" in
+              "plan")
+                echo -e "\n============================================================="
+                echo "Terraform PLAN in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer plan \
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
+                ;;
+              "apply")
+                echo -e "\n============================================================="
+                echo "Terraform APPLY in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
+                ;;
+              "destroy")
+                echo -e "\n============================================================="
+                echo "Terraform DESTROY in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../../global.tfvars
+                ;;
+              *)
+                echo "Invalid action: $ACTION"
+                exit 1
+                ;;
+            esac
           done  
