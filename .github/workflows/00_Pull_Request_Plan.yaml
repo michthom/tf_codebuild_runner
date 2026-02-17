@@ -65,3 +65,5 @@ jobs:
                 ||  github.ref_name == 'dev'  && 'dev'
             }}
         terraform_action: "plan"
+        aws_region: ${{ vars.AWS_REGION }}
+        tf_deploy_role_arn: ${{ vars.TF_DEPLOY_ROLE_ARN }}
