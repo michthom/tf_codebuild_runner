@@ -1,0 +1,224 @@
+name: Reusable Terraform Operations
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      terraform_action:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read
+
+jobs:
+  get-config-layers:
+    runs-on: ubuntu-latest
+
+    # Runs on GitHub hosted runners to resolve the AWS account ID and
+    # list of configuration layers in the repo.
+
+    # Set the environment for the job, which makes the GitHub environment
+    # variables available to us. We need:
+    #
+    #   vars.AWS_REGION
+    #   vars.TF_DEPLOY_ROLE_ARN
+    # 
+    environment: ${{ github.event.inputs.environment }}
+
+    outputs:
+
+      # The 12-digit AWS Account ID resolved by assuming the Terraform deployment role supplied by the environment
+      account_id:         ${{ steps.aws_identity.outputs.account_id }}
+      
+      # Serialised / escaped JSON structure containing list of configuration layers
+      config_layers_json: ${{ steps.get_config_layers.outputs.config_layers_json }}
+
+    steps:
+      - name: Configure AWS credentials
+        id: aws_credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region:     ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.TF_DEPLOY_ROLE_ARN }}
+          audience: sts.amazonaws.com
+          
+      - name: Get Account ID
+        id: aws_identity
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+          # Make available as an output
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Get Configuration Layers
+        id: get_config_layers
+        run: |
+        
+          # Get the list of configuration layers (subdirectories in source/terraform/configuration_layers)
+          # N.B. FRAGILE / REQUIREMENT - this depends on the configuration layer names containing no spaces.
+          # Also the assumption is that the layer names sort lexically into the right order for plan/apply
+          # and the reverse sort order for destroy operations.
+
+          CONFIG_LAYER_PATH="source/terraform/configuration_layers"
+
+          CONFIG_LAYERS=$(
+            find ${CONFIG_LAYER_PATH} \
+              -maxdepth 1 \
+              -type d \
+              -not -path ${CONFIG_LAYER_PATH} \
+              -exec basename {} \;
+          )
+
+          # Example values:
+          #   30_virtual_desktop
+          #   10_data_storage
+          #   20_network
+          #   00_prerequisites
+
+          # Split the list of layers into array elements and create a JSON object to contain them.
+          
+          # 'echo -n' prevents the addition of a newline character at the end of the list, which woudld add an empty element to the JSON.
+          #
+          # '--null-input' tells jq to not expect any input and allows us to create JSON from scratch.
+          # '--slurp' allows us to read the entire input as a single element, which is necessary since we are passing a list of layers as a multiline string.
+          # '--raw-input' treats the input as raw text, not JSON data
+          # '--compact-output' produces a one-line output.
+
+          CONFIG_LAYERS_JSON=$(
+            echo -n "$CONFIG_LAYERS" |
+              jq --null-input --slurp --raw-input --compact-output 'inputs | split("\n") | { configuration_layers: . }'
+            )
+
+          # Example value:
+          #   {"configuration_layers":["30_virtual_desktop","10_data_storage","20_network","00_prerequisites"]}
+
+          # Escape the JSON to ensure it can be safely passed as an output variable
+          # --slurp mode - read all input into a single string (instead of processing line by line)
+          
+          ESCAPED_CONFIG_LAYERS_JSON=$(
+            echo -n "$CONFIG_LAYERS_JSON" | \
+            jq --slurp --raw-input @json
+          )
+
+          # Example value:
+          #   "\"{\\"configuration_layers\\":[\\"30_virtual_desktop\\",\\"10_data_storage\\",\\"20_network\\",\\"00_prerequisites\\"]}\""
+
+          # Set the escaped JSON as an output variable for use in subsequent steps
+          echo "config_layers_json=$ESCAPED_CONFIG_LAYERS_JSON" >> $GITHUB_OUTPUT
+
+  terraform-job:
+    runs-on: ubuntu-latest
+    # runs-on: codebuild-667532145122-github-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    needs: get-config-layers
+    steps:
+      # See: https://github.com/hashicorp/setup-terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          # FIXME - should get this from global vars...
+          terraform_version: "~ 1.14.0"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region:     ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.TF_DEPLOY_ROLE_ARN }}
+          audience: sts.amazonaws.com
+
+      - name: Terraform operation in CodeBuild
+
+        env:
+          ENVIRONMENT:        ${{ github.event.inputs.environment }}
+          ACTION:             ${{ github.event.inputs.action }}
+          ACCOUNT_ID:         ${{ needs.get-config-layers.outputs.account_id }}
+          CONFIG_LAYERS_JSON: ${{ needs.get-config-layers.outputs.config_layers_json }}
+          
+        run: |-
+          #   echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
+          #   echo "AWS Account ID: $ACCOUNT_ID"
+          #   echo "Environment: $ENVIRONMENT"
+          #   echo "Action: $ACTION"
+
+          PARSED_JSON=${{ fromJSON( env.CONFIG_LAYERS_JSON ) }}
+
+          if terraform_action=$(echo "${{ github.event.inputs.terraform_action }}" | tr '[:upper:]' '[:lower:]'); then
+            case "$terraform_action" in
+              "plan"|"apply")
+                SORTED_LAYERS=$(jq --raw-output '.configuration_layers[]' <<< $PARSED_JSON | sort)
+                ;;
+              "destroy")
+                # Reverse order for destroy (sort -r)
+                SORTED_LAYERS=$(jq --raw-output '.configuration_layers[]' <<< $PARSED_JSON | sort -r)
+                ;;
+              *)
+                echo "Invalid terraform_action: $terraform_action"
+                exit 1
+                ;;
+            esac
+          else
+            echo "Failed to read terraform_action input"
+            exit 1
+          fi
+
+          # Example value for plan / apply:
+          #   00_prerequisites 10_data_storage 20_networking 30_virtual_desktop
+
+          # Example value for destroy (reverse order):
+          #   30_virtual_desktop 20_networking 10_data_storage 00_prerequisites
+
+          for config_layer in $configuration_layers; do
+
+            echo -e "\n\n============================================================="
+            echo "Terraform INIT in config layer: $config_layer"
+
+            # Terraform init
+            terraform -chdir=source/terraform/configuration_layers/$config_layer init \
+              -backend-config=../../environments/${ENVIRONMENT}.tfbackend \
+              -reconfigure
+
+            # Terraform plan / apply / destroy
+            case "$terraform_action" in
+              "plan")
+                echo -e "\n\n============================================================="
+                echo "Terraform PLAN in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer plan \
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
+                ;;
+              "apply")
+                echo -e "\n\n============================================================="
+                echo "Terraform APPLY in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve \
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
+                ;;
+              "destroy")
+                echo -e "\n\n============================================================="
+                echo "Terraform DESTROY in config layer: $config_layer"
+
+                terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve \
+                  -var-file=./config/${ENVIRONMENT}.tfvars \
+                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
+                  -var-file=../../global.tfvars
+                ;;
+              *)
+                echo "Invalid action: $terraform_action"
+                exit 1
+                ;;
+            esac
+          done

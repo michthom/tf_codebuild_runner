@@ -1,0 +1,67 @@
+name: 00 Pull Request Plan only
+on:
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options:
+          - dev
+          - stg
+          - prd
+        default: dev
+
+      action:
+        description: Action to perform
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        default: plan
+        
+  # Pull request targeting dev (dev environment) or main branch (stg environment)
+  #   [opened, synchronize, reopened, edited]
+        # github.event_name == "pull_request" &&
+        # github.base_ref == "dev" || github.base_ref == "main" &&
+        # github.event.pull_request.merged == false
+  #   Terraform plan only
+
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - dev
+      - main
+
+permissions:
+  # pull-requests: read permits an action to list pull requests, required to act on PR events and to check the base branch of a PR
+  pull-requests: read
+  # contents: read permits an action to list the commits, required to check the commit messages of a PR or a release, and to check the files changed in a PR
+  # This might not be needed in the context of this demo, but it's a common permission for Terraform workflows to check if the changes are only in specific paths (e.g., in a specific folder) to decide if the workflow should run or not  
+  contents: read
+  # Fetch an OpenID Connect (OIDC) token. This requires id-token: write. For more information,
+  # see OpenID Connect: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#updating-your-actions-for-oidc
+  id-token: write  
+
+jobs:
+  capture_job_context:
+    uses: ./.github/workflows/Reusable_Capture_Context.yaml
+    with:
+        environment: |-
+            ${{
+                    github.ref_name == 'main' && 'stg'
+                ||  github.ref_name == 'dev'  && 'dev'
+            }}
+
+  plan_only:
+    uses: ./.github/workflows/Reusable_Terraform_Operations.yaml
+    with:
+        environment: |-
+            ${{
+                    github.ref_name == 'main' && 'stg'
+                ||  github.ref_name == 'dev'  && 'dev'
+            }}
+        terraform_action: "plan"

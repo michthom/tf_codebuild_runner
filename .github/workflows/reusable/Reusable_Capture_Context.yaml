@@ -1,0 +1,82 @@
+name: Reusable Capture Context
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  explore:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write summary of the github context to log
+        run: |-
+          echo -e "\n\n================ GITHUB CONTEXT SUMMARY ================\n\n"
+          echo "          Event Name: ${{ github.event_name }}"
+          echo "            Ref Type: ${{ github.ref_type }}"
+          echo "            Ref_name: ${{ github.ref_name }}"
+
+      - name: Write env context to log
+        env:
+          ENV_CONTEXT: ${{ toJSON(env) }}
+        run: |-
+          echo -e "\n\n==================== ENV CONTEXT ====================\n\n"
+          echo "$ENV_CONTEXT"
+          
+      - name: Write vars context to log
+        env:
+          VARS_CONTEXT: ${{ toJSON(vars) }}
+        run: |-
+          echo -e "\n\n==================== VARS CONTEXT ====================\n\n"
+          echo "$VARS_CONTEXT"
+
+      - name: Write runner context to log
+        env:
+          RUNNER_CONTEXT: ${{ toJSON(runner) }}
+        run: |-
+          echo -e "\n\n==================== RUNNER CONTEXT ====================\n\n"
+          echo "$RUNNER_CONTEXT"
+          
+      - name: Write strategy context to log
+        env:
+          STRATEGY_CONTEXT: ${{ toJSON(strategy) }}
+        run: |-
+          echo -e "\n\n==================== STRATEGY CONTEXT ====================\n\n"
+          echo "$STRATEGY_CONTEXT"
+
+      - name: Write matrix context to log
+        env:
+          MATRIX_CONTEXT: ${{ toJSON(matrix) }}
+        run: |-
+          echo -e "\n\n==================== MATRIX CONTEXT ====================\n\n"
+          echo "$MATRIX_CONTEXT"
+          
+      - name: Write job context to log
+        env:
+          JOB_CONTEXT: ${{ toJSON(job) }}
+        run: |-
+          echo -e "\n\n==================== JOB CONTEXT ====================\n\n"
+          echo "$JOB_CONTEXT"
+
+      # this errors out if you try to access it w/o using a reusable workflow
+      # - name: Write jobs context to log (reusable workflows)
+      #   env:
+      #     JOB_CONTEXT: ${{ toJSON(jobs) }}
+      #   run: echo "$JOBS_CONTEXT"
+
+      - name: Write steps context to log
+        env:
+          STEPS_CONTEXT: ${{ toJSON(steps) }}
+        run: |-
+          echo -e "\n\n==================== STEPS CONTEXT ====================\n\n"
+          echo "$STEPS_CONTEXT"
+
+      - name: Write full GitHub context to log
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: |-
+          echo -e "\n\n==================== GITHUB CONTEXT ====================\n\n"
+          echo "$GITHUB_CONTEXT"
