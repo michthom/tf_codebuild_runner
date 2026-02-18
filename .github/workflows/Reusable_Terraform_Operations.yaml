@@ -152,6 +152,10 @@ jobs:
           # echo "              Environment: $ENVIRONMENT"
           # echo "         Terraform Action: $TERRAFORM_ACTION"
 
+          PARSED_JSON=${{ fromJSON( env.CONFIG_LAYERS_JSON ) }}
+
+          echo "PARSED_JSON: $PARSED_JSON"
+
           if tf_action=$(echo "$TERRAFORM_ACTION" | tr '[:upper:]' '[:lower:]'); then
             case "$tf_action" in
               "plan"|"apply")
@@ -170,6 +174,8 @@ jobs:
             echo "Failed to read terraform_action input"
             exit 1
           fi
+
+          echo "SORTED_LAYERS: $SORTED_LAYERS"
 
           # Example value for plan / apply:
           #   00_prerequisites 10_data_storage 20_networking 30_virtual_desktop
