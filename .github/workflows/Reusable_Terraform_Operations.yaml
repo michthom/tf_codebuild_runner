@@ -147,12 +147,10 @@ jobs:
           CONFIG_LAYERS_JSON: ${{ needs.get-config-layers.outputs.config_layers_json }}
           
         run: |-
-          echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
-          echo "           AWS Account ID: $ACCOUNT_ID"
-          echo "              Environment: $ENVIRONMENT"
-          echo "         Terraform Action: $TERRAFORM_ACTION"
-
-          PARSED_JSON=${{ fromJSON( env.CONFIG_LAYERS_JSON ) }}
+          # echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
+          # echo "           AWS Account ID: $ACCOUNT_ID"
+          # echo "              Environment: $ENVIRONMENT"
+          # echo "         Terraform Action: $TERRAFORM_ACTION"
 
           if tf_action=$(echo "$TERRAFORM_ACTION" | tr '[:upper:]' '[:lower:]'); then
             case "$tf_action" in
@@ -179,7 +177,7 @@ jobs:
           # Example value for destroy (reverse order):
           #   30_virtual_desktop 20_networking 10_data_storage 00_prerequisites
 
-          for config_layer in $configuration_layers; do
+          for config_layer in $SORTED_LAYERS; do
 
             echo -e "\n\n============================================================="
             echo "Terraform INIT in config layer: $config_layer"
