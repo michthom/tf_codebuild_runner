@@ -66,4 +66,4 @@ jobs:
                     github.ref_name == 'main' && 'stg'
                 ||  github.ref_name == 'dev'  && 'dev'
             }}
-        terraform_action: "plan"
+        terraform_action: plan

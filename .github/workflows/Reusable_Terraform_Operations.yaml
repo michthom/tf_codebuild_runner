@@ -164,7 +164,7 @@ jobs:
                 SORTED_LAYERS=$(jq --raw-output '.configuration_layers[]' <<< $PARSED_JSON | sort -r)
                 ;;
               *)
-                echo "Invalid terraform_action: $terraform_action"
+                echo "Invalid terraform_action: $terraform_action obtained from ${{ github.event.inputs.terraform_action }}"
                 exit 1
                 ;;
             esac
