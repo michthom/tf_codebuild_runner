@@ -142,20 +142,20 @@ jobs:
 
         env:
           ENVIRONMENT:        ${{ github.event.inputs.environment }}
-          ACTION:             ${{ github.event.inputs.action }}
+          TERRAFORM_ACTION:   ${{ github.event.inputs.terraform_action }}
           ACCOUNT_ID:         ${{ needs.get-config-layers.outputs.account_id }}
           CONFIG_LAYERS_JSON: ${{ needs.get-config-layers.outputs.config_layers_json }}
           
         run: |-
-          #   echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
-          #   echo "AWS Account ID: $ACCOUNT_ID"
-          #   echo "Environment: $ENVIRONMENT"
-          #   echo "Action: $ACTION"
+          echo "Configuration Layers JSON: $CONFIG_LAYERS_JSON"
+          echo "           AWS Account ID: $ACCOUNT_ID"
+          echo "              Environment: $ENVIRONMENT"
+          echo "         Terraform Action: $TERRAFORM_ACTION"
 
           PARSED_JSON=${{ fromJSON( env.CONFIG_LAYERS_JSON ) }}
 
-          if terraform_action=$(echo "${{ github.event.inputs.terraform_action }}" | tr '[:upper:]' '[:lower:]'); then
-            case "$terraform_action" in
+          if tf_action=$(echo "$TERRAFORM_ACTION" | tr '[:upper:]' '[:lower:]'); then
+            case "$tf_action" in
               "plan"|"apply")
                 SORTED_LAYERS=$(jq --raw-output '.configuration_layers[]' <<< $PARSED_JSON | sort)
                 ;;
@@ -164,7 +164,7 @@ jobs:
                 SORTED_LAYERS=$(jq --raw-output '.configuration_layers[]' <<< $PARSED_JSON | sort -r)
                 ;;
               *)
-                echo "Invalid terraform_action: $terraform_action obtained from ${{ github.event.inputs.terraform_action }}"
+                echo "Invalid terraform_action: $tf_action obtained from $TERRAFORM_ACTION"
                 exit 1
                 ;;
             esac
@@ -190,7 +190,7 @@ jobs:
               -reconfigure
 
             # Terraform plan / apply / destroy
-            case "$terraform_action" in
+            case "$tf_action" in
               "plan")
                 echo -e "\n\n============================================================="
                 echo "Terraform PLAN in config layer: $config_layer"
@@ -219,7 +219,7 @@ jobs:
                   -var-file=../../global.tfvars
                 ;;
               *)
-                echo "Invalid action: $terraform_action"
+                echo "Invalid action: $tf_action"
                 exit 1
                 ;;
             esac
