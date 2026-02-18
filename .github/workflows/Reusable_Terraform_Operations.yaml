@@ -141,9 +141,10 @@ jobs:
       - name: Terraform operation in CodeBuild
 
         env:
+          AWS_REGION:         ${{ vars.AWS_REGION }}
+          ACCOUNT_ID:         ${{ needs.get-config-layers.outputs.account_id }}
           ENVIRONMENT:        ${{ github.event.inputs.environment }}
           TERRAFORM_ACTION:   ${{ github.event.inputs.terraform_action }}
-          ACCOUNT_ID:         ${{ needs.get-config-layers.outputs.account_id }}
           CONFIG_LAYERS_JSON: ${{ needs.get-config-layers.outputs.config_layers_json }}
           
         run: |-
@@ -189,9 +190,15 @@ jobs:
             echo "Terraform INIT in config layer: $config_layer"
 
             # Terraform init
-            terraform -chdir=source/terraform/configuration_layers/$config_layer init \
-              -backend-config=../../environments/${ENVIRONMENT}.tfbackend \
-              -reconfigure
+
+            # FIXME the TF currently expects these from the environment:
+            echo "FIXME: TF requires configuration variables!"
+
+            # terraform -chdir=source/terraform/configuration_layers/$config_layer init \
+            #   -backend-config="bucket=VALUE"
+            #   -backend-config="key=VALUE"
+            #   -backend-config="region=VALUE"
+            #   -reconfigure
 
             # Terraform plan / apply / destroy
             case "$tf_action" in
@@ -199,29 +206,49 @@ jobs:
                 echo -e "\n\n============================================================="
                 echo "Terraform PLAN in config layer: $config_layer"
 
-                terraform -chdir=source/terraform/configuration_layers/$config_layer plan \
-                  -var-file=./config/${ENVIRONMENT}.tfvars \
-                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
-                  -var-file=../../global.tfvars
+                # FIXME the TF currently expects these from the environment:
+
+                echo "FIXME: TF requires configuration variables!"
+                # terraform -chdir=source/terraform/configuration_layers/$config_layer plan \
+                #   -var-file=./config/${ENVIRONMENT}.tfvars \
+                #   -var="project_name=$XXXXXX" \
+                #   -var="aws_region=$XXXXXX" \
+                #   -var="account_id=$ACCOUNT_ID" \
+                #   -var="environment=$ENVIRONMENT" \
+                #   -var="layer=$config_layer"
+
+ 
                 ;;
               "apply")
                 echo -e "\n\n============================================================="
                 echo "Terraform APPLY in config layer: $config_layer"
 
-                terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve \
-                  -var-file=./config/${ENVIRONMENT}.tfvars \
-                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
-                  -var-file=../../global.tfvars
-                ;;
+                # FIXME the TF currently expects these from the environment:
+
+                echo "FIXME: TF requires configuration variables!"
+                # terraform -chdir=source/terraform/configuration_layers/$config_layer apply -auto-approve \
+                #   -var-file=./config/${ENVIRONMENT}.tfvars \
+                #   -var="project_name=$XXXXXX" \
+                #   -var="aws_region=$XXXXXX" \
+                #   -var="account_id=$ACCOUNT_ID" \
+                #   -var="environment=$ENVIRONMENT" \
+                #   -var="layer=$config_layer"
+                  ;;
               "destroy")
                 echo -e "\n\n============================================================="
                 echo "Terraform DESTROY in config layer: $config_layer"
 
-                terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve \
-                  -var-file=./config/${ENVIRONMENT}.tfvars \
-                  -var-file=../../environments/${ENVIRONMENT}.tfvars \
-                  -var-file=../../global.tfvars
-                ;;
+                # FIXME the TF currently expects these from the environment:
+
+                echo "FIXME: TF requires configuration variables!"
+                # terraform -chdir=source/terraform/configuration_layers/$config_layer destroy -auto-approve \
+                #   -var-file=./config/${ENVIRONMENT}.tfvars \
+                #   -var="project_name=$XXXXXX" \
+                #   -var="aws_region=$XXXXXX" \
+                #   -var="account_id=$ACCOUNT_ID" \
+                #   -var="environment=$ENVIRONMENT" \
+                #   -var="layer=$config_layer"
+                  ;;
               *)
                 echo "Invalid action: $tf_action"
                 exit 1
