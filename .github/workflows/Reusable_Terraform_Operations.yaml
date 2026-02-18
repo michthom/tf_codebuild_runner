@@ -9,12 +9,6 @@ on:
       terraform_action:
         required: true
         type: string
-      aws_region:
-        required: true
-        type: string
-      tf_deploy_role_arn:
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -49,8 +43,8 @@ jobs:
         id: aws_credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-region:     ${{ github.event.inputs.aws_region }}
-          role-to-assume: ${{ github.event.inputs.tf_deploy_role_arn }}
+          aws-region:     ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.TF_DEPLOY_ROLE_ARN }}
           audience: sts.amazonaws.com
           
       - name: Get Account ID
@@ -138,8 +132,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-region:     ${{ github.event.inputs.aws_region }}
-          role-to-assume: ${{ github.event.inputs.tf_deploy_role_arn }}
+          aws-region:     ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.TF_DEPLOY_ROLE_ARN }}
           audience: sts.amazonaws.com
 
       - name: Terraform operation in CodeBuild

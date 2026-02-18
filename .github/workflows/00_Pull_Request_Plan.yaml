@@ -59,11 +59,11 @@ jobs:
   plan_only:
     uses: ./.github/workflows/Reusable_Terraform_Operations.yaml
     with:
+        # FIXME - the plan_only job is not seeing a value passed for AWS_REGION, at least when started manually
+        # which implies the environment is not set for the 00_Pull_Request_Plan.yaml workflow, and no GitHub environment variables are passed in.
         environment: |-
             ${{
                     github.ref_name == 'main' && 'stg'
                 ||  github.ref_name == 'dev'  && 'dev'
             }}
         terraform_action: "plan"
-        aws_region: ${{ vars.AWS_REGION }}
-        tf_deploy_role_arn: ${{ vars.TF_DEPLOY_ROLE_ARN }}
