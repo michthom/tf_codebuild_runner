@@ -25,8 +25,6 @@ Parameters:
     ConstraintDescription: Must be one of the following - dev, stg, prd.
 
 Resources:
-  # FIXME - the bucket ARN should be published to SSM Parameter Store for use in the deployment role policy.
-
   TerraformStateBucket:
     Type: AWS::S3::Bucket
     Properties:

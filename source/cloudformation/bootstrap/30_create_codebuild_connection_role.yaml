@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Prerequisites, policy and role for CodeBuild project to access connection to GitHub
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Environment Configuration
+        Parameters:
+          - AWSRegion
+          - ProjectName
+          - Environment
+      - Label:
+          default: GitHub Repository Information
+        Parameters:
+          - GHOrg
+          - GHRepo
+
+    ParameterLabels:
+      AWSRegion:
+        default: AWS Region
+      ProjectName:
+        default: Project Name
+      Environment:
+        default: Environment Name (e.g., dev, stg, prd)
+      GHOrg:
+        default: GitHub Organization
+      GHRepo:
+        default: GitHub Repository
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: MyCoolProject
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must be 3–20 characters, letters, numbers, or hyphens. 
+  Environment:
+    Type: String
+    Description: Environment name
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: Must be one of the following - dev, stg, prd.
+  GHOrg:
+    Type: String
+    Description: GitHub Organization name
+    Default: michthom
+    MinLength: 1
+    MaxLength: 39
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: Must be 1–39 characters, letters, numbers, or hyph
+  GHRepo:
+    Type: String
+    Description: GitHub Repository name
+    Default: tf_codebuild_runner
+    MinLength: 1
+    MaxLength: 100
+    AllowedPattern: '^[a-zA-Z0-9._-]+$'
+    ConstraintDescription: Must be 1–100 characters, letters, numbers, hyphens, underscores, or periods.
+  AWSRegion:
+    Type: String
+    Description: AWS Region to deploy resources in
+    Default: eu-west-2
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+      - eu-west-2
+    ConstraintDescription: Must be a valid AWS region (e.g., us-east-1, us-west-2, eu-west-1, eu-west-2, ap-southeast-1, ap-southeast-2)
+
+Resources:
+  DummySSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::AccountId}/DummyParameter/${Environment}"
+      Type: String
+      Value: Placeholder only
